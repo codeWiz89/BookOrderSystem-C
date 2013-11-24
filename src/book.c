@@ -16,6 +16,8 @@
 personNode* personHead = NULL;
 bookOrder* bookOrderHead = NULL;
 
+char* cat[50];
+
 void readDBFile(FILE* fileToRead) {
 
 	char line[1000] = { 0 };
@@ -34,7 +36,7 @@ void readDBFile(FILE* fileToRead) {
 		strcpy(toAdd->state, strtok(NULL, "|"));
 		strcpy(toAdd->zipcode, strtok(NULL, "|"));
 
-		HASH_ADD_STR(personHead, name, toAdd);
+		HASH_ADD(hh, personHead, id, sizeof(int), toAdd);
 
 		memset(line, 0, 1000);
 
@@ -44,13 +46,20 @@ void readDBFile(FILE* fileToRead) {
 void readOrderFile(FILE* fileToRead) {
 
 	char line[1000] = { 0 };
-	FILE* dbFile = fileToRead;
+	FILE* orderFile = fileToRead;
 
-	while (!feof(dbFile)) {
+	while (!feof(orderFile)) {
 
-		fgets(line, 1000, dbFile);
+		fgets(line, 1000, orderFile);
+		bookOrder* toAdd = malloc(sizeof(bookOrder));
 
+		strcpy(toAdd->book, strtok(line, "|"));
+		toAdd->id = atoi(strtok(NULL, "|"));
+		toAdd->price = atof(strtok(NULL, "|"));
+		strcpy(toAdd->category, strtok(NULL, "|"));
 
+		HASH_ADD(hh, bookOrderHead, category, sizeof(int), toAdd);
+		memset(line, 0, 1000);
 
 	}
 }
@@ -61,32 +70,27 @@ void printDB() {
 
 	for (temp = personHead; temp != NULL; temp = temp->hh.next) {
 
-		printf("%s", temp->name);
-		printf("%d", temp->id);
-		printf("%f", temp->balance);
-		printf("%s", temp->address);
-		printf("%s", temp->state);
+		printf("%s ", temp->name);
+		printf("%i ", temp->id);
+		printf("%f ", temp->balance);
+		printf("%s ", temp->address);
+		printf("%s ", temp->state);
 		printf("%s\n", temp->zipcode);
 	}
 }
 
-/*void freeAll() {
+void printOrder() {
 
-	personNode *ptr, tmp;
+	bookOrder* temp;
 
-	HASH_ITER(hh, personHead, ptr, tmp) {
+	for (temp = bookOrderHead; temp != NULL; temp = temp->hh.next) {
 
-		HASH_DEL(personHead, ptr); // delete it (words advances to next)
-
-		free(ptr->name);
-		free(ptr->address);
-		free(ptr->state);
-
-		free(ptr);// free it
+		printf("%s ", temp->book);
+		printf("%f ", temp->price);
+		printf("%i ", temp->id);
+		printf("%s\n", temp->category);
 	}
 }
-
-*/
 
 int main(int argc, char *argv[]) {
 
@@ -97,17 +101,29 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	char fileName[sizeof(argv[1])];
-	strcpy(fileName, argv[1]);
+	char* c = strtok(argv[3], " ");
 
-	if (fileName != NULL) {
+	int count = 0;
 
-		FILE* dbFile = fopen(fileName, "r");
+	while (c != NULL) {
+
+		cat[count] = c;
+		c = strtok(NULL, " ");
+		count += 1;
+	}
+
+	if (argv[1] != NULL && argv[2] != NULL) {
+
+		FILE* dbFile = fopen(argv[1], "r");
+		FILE* orderFile = fopen(argv[2], "r");
 
 		if (dbFile != NULL) {
 
 			readDBFile(dbFile);
+			readOrderFile(orderFile);
+
 			printDB();
+			printOrder();
 		}
 
 		else {
