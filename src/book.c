@@ -15,6 +15,7 @@
 
 personNode* personHead = NULL;
 bookOrder* bookOrderHead = NULL;
+float revenue;
 pthread_mutex_t cd_lock;
 
 char* cat[50];
@@ -25,9 +26,9 @@ void readDBFile(FILE* fileToRead) {
 	FILE* dbFile = fileToRead;
 
 	while (!feof(dbFile)) {
-
+	 
 		fgets(line, 1000, dbFile);
-
+		if(!feof(dbFile)){
 		personNode* toAdd = malloc(sizeof(personNode));
 
 		strcpy(toAdd->name, strtok(line, "|"));
@@ -38,8 +39,9 @@ void readDBFile(FILE* fileToRead) {
 		strcpy(toAdd->zipcode, strtok(NULL, "|"));
 
 		HASH_ADD(hh, personHead, id, sizeof(int), toAdd);
-
+	  }
 		memset(line, 0, 1000);
+	  
 	}
 }
 
@@ -137,7 +139,7 @@ void *processorThread(void *arg) {
 
 		if (tempPerson != NULL) {
 
-			printf("%d\n", tempPerson->id);
+		  //printf("%d\n", tempPerson->id);
 
 			if (tempPerson->balance >= findBookOrder->price) {
 
@@ -150,7 +152,14 @@ void *processorThread(void *arg) {
 					tempPerson->so->price = findBookOrder->price;
 					tempPerson->so->remaining = balance - findBookOrder->price;
 					tempPerson->balance = balance - findBookOrder->price;
-
+					printf("Successful confirmation\n");
+					printf("%s, ",tempPerson->so->title);
+					printf("%f, ",tempPerson->so->price);
+					printf("%s, ",tempPerson->name);
+					printf("%s, ",tempPerson->address);
+					printf("%s, ",tempPerson->state);
+					printf("%s\n",tempPerson->zipcode);
+					revenue+=tempPerson->so->price;
 				}
 
 				else {
@@ -172,8 +181,17 @@ void *processorThread(void *arg) {
 					} while (ptr != NULL);
 
 					prev->next = so;
-				}
 
+					printf("Successful confirmation\n");
+					printf("%s, ",so->title);
+					printf("%f, ",so->price);
+					printf("%s, ",tempPerson->name);
+					printf("%s, ",tempPerson->address);
+					printf("%s, ",tempPerson->state);
+					printf("%s\n",tempPerson->zipcode);
+					revenue+=so->price;
+				}
+				
 				HASH_DEL(bookOrderHead, findBookOrder);
 			}
 
@@ -184,6 +202,12 @@ void *processorThread(void *arg) {
 					tempPerson->fo = malloc(sizeof(failedOrder));
 					strcpy(tempPerson->fo->title, findBookOrder->book);
 					tempPerson->fo->price = findBookOrder->price;
+
+					printf("Failed order\n");
+					printf("%s, ",tempPerson->name);
+					printf("%s, ",tempPerson->fo->title);
+					printf("%f, ",tempPerson->fo->price);
+					printf("%f\n",tempPerson->balance);
 
 				}
 
@@ -204,6 +228,12 @@ void *processorThread(void *arg) {
 					} while (ptr != NULL);
 
 					prev->next = fo;
+
+					printf("Failed order\n");
+					printf("%s, ",tempPerson->name);
+					printf("%s, ",fo->title);
+					printf("%f, ",fo->price);
+					printf("%f\n",tempPerson->balance);
 				}
 
 				HASH_DEL(bookOrderHead, findBookOrder);
@@ -227,28 +257,30 @@ void printDB() {
 
 		if (temp != NULL) {
 
-			printf("%s ", temp->name);
+		  /*	printf("%s ", temp->name);
 			printf("%i ", temp->id);
 			printf("%f ", temp->balance);
 			printf("%s ", temp->address);
 			printf("%s ", temp->state);
 			printf("%s\n", temp->zipcode);
+		  */
 
 			if (temp->so != NULL) {
 
 				successfulOrder* ptr = temp->so;
 
 				while (ptr != NULL) {
-
+				  /*
 					printf("%s ", ptr->title);
 					printf("%f ", ptr->price);
 					printf("%f \n", ptr->remaining);
+				  */
 
 					ptr = ptr->next;
 
 				}
 			}
-
+			/*
 			if (temp->fo != NULL) {
 
 				printf("Now Printing failed orders...\n");
@@ -264,6 +296,8 @@ void printDB() {
 
 				}
 			}
+
+			*/
 		}
 
 		printf("\n");
@@ -396,7 +430,7 @@ int main(int argc, char *argv[]) {
 			readOrderFile(orderFile);
 
 			//	printDB();
-				printOrder();
+			//	printOrder();
 		}
 
 		else {
@@ -433,7 +467,8 @@ int main(int argc, char *argv[]) {
 	printf("\n");
 	printf("\n");
 
-	printDB();
+	printf("Total revenue gained is %f\n",revenue);
+	//	printDB();
 	writeFinalReport();
 
 	return 0;
