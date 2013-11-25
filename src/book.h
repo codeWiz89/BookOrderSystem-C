@@ -5,19 +5,6 @@
 
 #include "uthash.h"
 
-typedef struct personNode_ personNode;
-struct personNode_ {
-
-	char name[500];
-	int id;
-	double balance;
-	char address[500];
-	char state[50];
-	char zipcode[50];
-
-	UT_hash_handle hh;
-};
-
 typedef struct bookorder_ bookOrder;
 struct bookorder_ {
 	char book[500];
@@ -29,18 +16,33 @@ struct bookorder_ {
 };
 
 
-typedef struct successful_ successful;
+typedef struct successful_ successfulOrder;
 struct successful_ {
 	char* title;
 	double price;
 	double remaining;
-	successful* next;
+	successfulOrder* next;
 };
 
-typedef struct failed_* failed;
+typedef struct failed_* failedOrder;
 struct failed_ {
 	char* title;
 	double price;
-	failed* next;
+	failedOrder* next;
 };
 
+typedef struct personNode_ personNode;
+struct personNode_ {
+
+	char name[500];
+	int id;
+	double balance;
+	char address[500];
+	char state[50];
+	char zipcode[50];
+
+	successfulOrder so;
+	failedOrder fo;
+
+	UT_hash_handle hh;
+};
