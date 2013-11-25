@@ -124,14 +124,16 @@ void *processorThread(void *arg) {
 
 	char *str = (char*) arg;
 
-	pthread_mutex_lock(&cd_lock);
+//	pthread_mutex_lock(&cd_lock);
 
-	printf("%s\n", str);
+//	printf("%s\n", str);
 
 	bookOrder* findBookOrder;
 	HASH_FIND_STR(bookOrderHead, str, findBookOrder);
 
 	while (findBookOrder != NULL) {
+
+		pthread_mutex_lock(&cd_lock);
 
 		personNode* tempPerson;
 		int tempID = findBookOrder->id;
@@ -214,9 +216,10 @@ void *processorThread(void *arg) {
 		}
 
 		HASH_FIND_STR(bookOrderHead, str, findBookOrder);
+		pthread_mutex_unlock(&cd_lock);
 	}
 
-	pthread_mutex_unlock(&cd_lock);
+//	pthread_mutex_unlock(&cd_lock);
 
 	return 0;
 
