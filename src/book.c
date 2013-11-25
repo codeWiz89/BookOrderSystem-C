@@ -27,20 +27,19 @@ void readDBFile(FILE* fileToRead) {
 	while (!feof(dbFile)) {
 
 		fgets(line, 1000, dbFile);
-		if(!feof(dbFile)){
-		  personNode* toAdd = malloc(sizeof(personNode));
-		  char* temp = strtok(line,"|");
-		  strcpy(toAdd->name, temp);
-		  toAdd->id = atoi(strtok(NULL, "|"));
-		  toAdd->balance = atof(strtok(NULL, "|"));
-		  strcpy(toAdd->address, strtok(NULL, "|"));
-		  strcpy(toAdd->state, strtok(NULL, "|"));
-		  strcpy(toAdd->zipcode, strtok(NULL, "|"));
 
-		  HASH_ADD(hh, personHead, id, sizeof(int), toAdd);
-		}
+		personNode* toAdd = malloc(sizeof(personNode));
+
+		strcpy(toAdd->name, strtok(line, "|"));
+		toAdd->id = atoi(strtok(NULL, "|"));
+		toAdd->balance = atof(strtok(NULL, "|"));
+		strcpy(toAdd->address, strtok(NULL, "|"));
+		strcpy(toAdd->state, strtok(NULL, "|"));
+		strcpy(toAdd->zipcode, strtok(NULL, "|"));
+
+		HASH_ADD(hh, personHead, id, sizeof(int), toAdd);
+
 		memset(line, 0, 1000);
-
 	}
 }
 
@@ -125,51 +124,34 @@ void *processorThread(void *arg) {
 
 	char *str = (char*) arg;
 
-	/*	pthread_mutex_lock(&cd_lock); // "Dont touch the queue! I'm changing it."
+	pthread_mutex_lock(&cd_lock);
 
-	 //	printf("%s\n", str);
+	printf("%s\n", str);
 
-	 bookOrder* toFind;
-	 HASH_FIND_STR(bookOrderHead, str, toFind);
+	bookOrder* findBookOrder;
+	HASH_FIND_STR(bookOrderHead, str, findBookOrder);
 
-	 while (toFind != NULL) {
-
-	 //	printf("%s ", toFind->book);
-	 //	printf("%f ", toFind->price);
-	 //	printf("%i ", toFind->id);
-	 //	printf("%s\n", toFind->category);
-
-	 HASH_DEL(bookOrderHead, toFind);
-	 HASH_FIND_STR(bookOrderHead, str, toFind);
-	 }
-
-	 pthread_mutex_unlock(&cd_lock); */
-
-	pthread_mutex_lock(&cd_lock); // "Dont touch the queue! I'm changing it."
-
-	bookOrder* findOrder;
-	for (findOrder = bookOrderHead; findOrder != NULL; findOrder = findOrder->hh.next) {
-	  if (strcmp(findOrder->category,str)==0) {
+	while (findBookOrder != NULL) {
 
 		personNode* tempPerson;
-		int tempID = findOrder->id;
-
+		int tempID = findBookOrder->id;
 		HASH_FIND_INT(personHead, &tempID, tempPerson);
 
 		if (tempPerson != NULL) {
 
-			if (tempPerson->balance >= findOrder->price) {
+			printf("%d\n", tempPerson->id);
+
+			if (tempPerson->balance >= findBookOrder->price) {
 
 				int balance = tempPerson->balance;
 
 				if (tempPerson->so == NULL) {
 
 					tempPerson->so = malloc(sizeof(successfulOrder));
-					strcpy(tempPerson->so->title, findOrder->book);
-					tempPerson->so->price = findOrder->price;
-					tempPerson->so->remaining = balance - findOrder->price;
-					tempPerson->balance = balance - findOrder->price;
-					
+					strcpy(tempPerson->so->title, findBookOrder->book);
+					tempPerson->so->price = findBookOrder->price;
+					tempPerson->so->remaining = balance - findBookOrder->price;
+					tempPerson->balance = balance - findBookOrder->price;
 
 				}
 
@@ -179,11 +161,10 @@ void *processorThread(void *arg) {
 					successfulOrder* ptr = tempPerson->so;
 
 					successfulOrder* so = malloc(sizeof(successfulOrder));
-					strcpy(so->title, findOrder->book);
-					so->price = findOrder->price;
-					so->remaining = balance - findOrder->price;
-					tempPerson->balance = balance - findOrder->price;
-					
+					strcpy(so->title, findBookOrder->book);
+					so->price = findBookOrder->price;
+					so->remaining = balance - findBookOrder->price;
+					tempPerson->balance = balance - findBookOrder->price;
 
 					do {
 
@@ -195,22 +176,16 @@ void *processorThread(void *arg) {
 					prev->next = so;
 				}
 
-				HASH_DEL(bookOrderHead, findOrder);
+				HASH_DEL(bookOrderHead, findBookOrder);
 			}
 
 			else {
 
-				failedOrder* fo = malloc(sizeof(failedOrder));
-				strcpy(fo->title, findOrder->book);
-				fo->price = findOrder->price;
-
-				HASH_DEL(bookOrderHead, findOrder);
-
 				if (tempPerson->fo == NULL) {
 
 					tempPerson->fo = malloc(sizeof(failedOrder));
-					strcpy(tempPerson->fo->title, findOrder->book);
-					tempPerson->fo->price = findOrder->price;
+					strcpy(tempPerson->fo->title, findBookOrder->book);
+					tempPerson->fo->price = findBookOrder->price;
 
 				}
 
@@ -220,8 +195,8 @@ void *processorThread(void *arg) {
 					failedOrder* ptr = tempPerson->fo;
 
 					failedOrder* fo = malloc(sizeof(failedOrder));
-					strcpy(fo->title, findOrder->book);
-					fo->price = findOrder->price;
+					strcpy(fo->title, findBookOrder->book);
+					fo->price = findBookOrder->price;
 
 					do {
 
@@ -232,16 +207,20 @@ void *processorThread(void *arg) {
 
 					prev->next = fo;
 				}
+
+				HASH_DEL(bookOrderHead, findBookOrder);
 			}
+
 		}
+
+		HASH_FIND_STR(bookOrderHead, str, findBookOrder);
 	}
-	}
+
 	pthread_mutex_unlock(&cd_lock);
 
 	return 0;
 
 }
-
 
 void printDB() {
 
@@ -339,8 +318,8 @@ int main(int argc, char *argv[]) {
 			readDBFile(dbFile);
 			readOrderFile(orderFile);
 
-			//printDB();
-			//printOrder();
+			//	printDB();
+			//	printOrder();
 		}
 
 		else {
@@ -352,23 +331,46 @@ int main(int argc, char *argv[]) {
 
 	pthread_mutex_init(&cd_lock, NULL);
 
-	pthread_t processor_SPORTS01, processor_HOUSING01, processor_POLITICS01;
+/*	pthread_t processor_SPORTS01, processor_HOUSING01, processor_POLITICS01;
 
 	int ret;
 
-	ret = pthread_create(&processor_SPORTS01, NULL, processorThread, cat[0]);
-	printf("%s 0 \n", cat[0]);
+	ret = pthread_create(&processor_SPORTS01, 0, processorThread, cat[0]);
+//	printf("%d \n", ret);
 
-	ret = pthread_create(&processor_HOUSING01, NULL, processorThread, cat[1]);
-	printf("%s 0 \n", cat[1]);
+	ret = pthread_create(&processor_HOUSING01, 0, processorThread, cat[1]);
+//	printf("%d \n", ret);
 
-	ret = pthread_create(&processor_POLITICS01, NULL, processorThread, cat[2]);
-	printf("%s 0 \n", cat[2]);
+	ret = pthread_create(&processor_POLITICS01, 0, processorThread, cat[2]);
+//	printf("%d \n", ret);
 
-	pthread_join(processor_SPORTS01, NULL);
-	pthread_join(processor_HOUSING01, NULL);
-	pthread_join(processor_POLITICS01, NULL);
+	pthread_join(processor_SPORTS01, 0);
+	pthread_join(processor_HOUSING01, 0);
+	pthread_join(processor_POLITICS01, 0); */
 
+	int threads = count;
+	int i;
+
+	pthread_t * thread = malloc(sizeof(pthread_t)*threads);
+	int ret;
+
+	for (i = 0; i < threads; i++) {
+
+	    ret = pthread_create(&thread[i], NULL, processorThread, cat[i]);
+
+	    if(ret != 0) {
+
+	        printf ("Create pthread error!\n");
+	        exit (1);
+	    }
+	}
+
+	for (i = 0; i < threads; i++) {
+
+		pthread_join(thread[i], 0);
+	}
+
+	printf("\n");
 	printf("\n");
 
 	printDB();
@@ -378,9 +380,6 @@ int main(int argc, char *argv[]) {
 	printf("\n");
 
 	printOrder();
-
-
-
 
 	return 0;
 }
