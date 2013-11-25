@@ -12,6 +12,9 @@
 #include <ctype.h>
 #include <pthread.h>
 #include "book.h"
+#include "tokenizer.h"
+
+#define DELIMS "abcdefghijklmnopqrstuvwyz0123456789";
 
 personNode* personHead = NULL;
 bookOrder* bookOrderHead = NULL;
@@ -47,21 +50,81 @@ void readOrderFile(FILE* fileToRead) {
 
 	char line[1000] = { 0 };
 	FILE* orderFile = fileToRead;
+	char* wordToken;
+	int count = 1;
 
 	while (!feof(orderFile)) {
 
 		fgets(line, 1000, orderFile);
 		bookOrder* toAdd = malloc(sizeof(bookOrder));
+		wordToken = strtok(line, "|");
+		int i = 0;
 
-		strcpy(toAdd->book, strtok(line, "|"));
-		toAdd->id = atoi(strtok(NULL, "|"));
-		toAdd->price = atof(strtok(NULL, "|"));
-		strcpy(toAdd->category, strtok(NULL, "|"));
+		while (wordToken != NULL) {
 
-		HASH_ADD(hh, bookOrderHead, category, sizeof(int), toAdd);
+			if (count == 1) {
+
+				int toInsert = 0;
+
+				for (i = 0; i < strlen(wordToken); i++) {
+
+					char c = wordToken[i];
+
+					if (isalpha(c) || isdigit(c) || c == ' ') {
+
+						toAdd->book[toInsert] = c;
+						toInsert++;
+
+					}
+				}
+			}
+
+			else if (count == 2) {
+
+				toAdd->price = atof(wordToken);
+
+			}
+
+			else if (count == 3) {
+
+				toAdd->id = atoi(wordToken);
+			}
+
+			else if (count == 4) {
+
+				int toInsert = 0;
+
+				for (i = 0; i < strlen(wordToken); i++) {
+
+					char c = wordToken[i];
+
+					if (isalpha(c) || isdigit(c)) {
+
+						toAdd->category[toInsert] = c;
+						toInsert++;
+
+					}
+				}
+			}
+
+			count++;
+			wordToken = strtok(NULL, "|");
+		}
+
+		/*	strcpy(toAdd->book, strtok(line, "|"));
+		 toAdd->id = atoi(strtok(NULL, "|"));
+		 toAdd->price = atof(strtok(NULL, "|"));
+		 strcpy(toAdd->category, strtok(NULL, "|")); */
+
+		HASH_ADD_STR(bookOrderHead, category, toAdd);
+		count = 1;
 		memset(line, 0, 1000);
 
 	}
+}
+
+void *processThread() {
+
 }
 
 void printDB() {
@@ -132,6 +195,34 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
+
+
+
+	/* printf("\n");
+	 printf("\n");
+	 printf("\n");
+
+	 int i = 0;
+	 bookOrder* toFind;
+
+	 for (i = 0; i < count; i++) {
+
+	 HASH_FIND_STR(bookOrderHead, cat[i], toFind);
+
+	 while (toFind != NULL) {
+
+	 printf("%s ", toFind->book);
+	 printf("%f ", toFind->price);
+	 printf("%i ", toFind->id);
+	 printf("%s\n", toFind->category);
+
+	 HASH_DEL(bookOrderHead, toFind);
+
+	 HASH_FIND_STR(bookOrderHead, cat[i], toFind);
+	 }
+	 }
+
+	 */
 
 	return 0;
 }
