@@ -288,6 +288,83 @@ void printOrder() {
 	}
 }
 
+void writeFinalReport() {
+
+	FILE* dbFile = fopen("finalreport.txt", "w");
+	personNode *ptr;
+	int i;
+
+	for (ptr = personHead; ptr != NULL; ptr = ptr->hh.next) {
+
+		if (ptr != NULL) {
+
+			fprintf(dbFile, "=== BEGIN CUSTOMER INFO ===\n");
+			fprintf(dbFile, "### Balance ###\n");
+
+		//	fprintf(dbFile, "Customer name: %s\n", ptr->name);
+
+			fprintf(dbFile, "Customer name: ");
+
+			for (i = 0; i < strlen(ptr->name); i++) {
+
+				char c = ptr->name[i];
+
+				if (isalpha(c) || c == ' ') {
+
+					fprintf(dbFile, "%c", c);
+
+				}
+			}
+
+			fprintf(dbFile, "\n");
+
+			fprintf(dbFile, "Remaining credit balance after all purchases (a dollar amount): %f\n", ptr->balance);
+			fprintf(dbFile, "### SUCCESSFUL ORDERS ###\n");
+
+			if (ptr->so != NULL) {
+
+				successfulOrder* sPTR = ptr->so;
+
+				while (sPTR != NULL) {
+
+					fprintf(dbFile, "\"%s\"", sPTR->title);
+					fprintf(dbFile, "| %f| ", sPTR->price);
+					fprintf(dbFile, "%f", sPTR->remaining);
+
+					fprintf(dbFile, "\n");
+
+					sPTR = sPTR->next;
+
+				}
+			}
+
+			fprintf(dbFile, "### REJECTED ORDERS ###\n");
+
+			if (ptr->fo != NULL) {
+
+				failedOrder* fPTR = ptr->fo;
+
+				while (fPTR != NULL) {
+
+					fprintf(dbFile, "\"%s\"", fPTR->title);
+					fprintf(dbFile, "| %f", fPTR->price);
+
+					fprintf(dbFile, "\n");
+
+					fPTR = fPTR->next;
+
+				}
+			}
+
+			fprintf(dbFile, "### END CUSTOMER INFO ###\n");
+			fprintf(dbFile, "\n");
+		}
+	}
+
+	fclose(dbFile);
+
+}
+
 int main(int argc, char *argv[]) {
 
 	if (argc < 4 || argc > 4) {
@@ -331,38 +408,38 @@ int main(int argc, char *argv[]) {
 
 	pthread_mutex_init(&cd_lock, NULL);
 
-/*	pthread_t processor_SPORTS01, processor_HOUSING01, processor_POLITICS01;
+	/*	pthread_t processor_SPORTS01, processor_HOUSING01, processor_POLITICS01;
 
-	int ret;
+	 int ret;
 
-	ret = pthread_create(&processor_SPORTS01, 0, processorThread, cat[0]);
-//	printf("%d \n", ret);
+	 ret = pthread_create(&processor_SPORTS01, 0, processorThread, cat[0]);
+	 //	printf("%d \n", ret);
 
-	ret = pthread_create(&processor_HOUSING01, 0, processorThread, cat[1]);
-//	printf("%d \n", ret);
+	 ret = pthread_create(&processor_HOUSING01, 0, processorThread, cat[1]);
+	 //	printf("%d \n", ret);
 
-	ret = pthread_create(&processor_POLITICS01, 0, processorThread, cat[2]);
-//	printf("%d \n", ret);
+	 ret = pthread_create(&processor_POLITICS01, 0, processorThread, cat[2]);
+	 //	printf("%d \n", ret);
 
-	pthread_join(processor_SPORTS01, 0);
-	pthread_join(processor_HOUSING01, 0);
-	pthread_join(processor_POLITICS01, 0); */
+	 pthread_join(processor_SPORTS01, 0);
+	 pthread_join(processor_HOUSING01, 0);
+	 pthread_join(processor_POLITICS01, 0); */
 
 	int threads = count;
 	int i;
 
-	pthread_t * thread = malloc(sizeof(pthread_t)*threads);
+	pthread_t * thread = malloc(sizeof(pthread_t) * threads);
 	int ret;
 
 	for (i = 0; i < threads; i++) {
 
-	    ret = pthread_create(&thread[i], NULL, processorThread, cat[i]);
+		ret = pthread_create(&thread[i], NULL, processorThread, cat[i]);
 
-	    if(ret != 0) {
+		if (ret != 0) {
 
-	        printf ("Create pthread error!\n");
-	        exit (1);
-	    }
+			printf("Create pthread error!\n");
+			exit(1);
+		}
 	}
 
 	for (i = 0; i < threads; i++) {
@@ -374,12 +451,7 @@ int main(int argc, char *argv[]) {
 	printf("\n");
 
 	printDB();
-
-	printf("\n");
-	printf("\n");
-	printf("\n");
-
-	printOrder();
+	writeFinalReport();
 
 	return 0;
 }
