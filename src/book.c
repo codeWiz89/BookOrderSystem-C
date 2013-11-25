@@ -124,10 +124,6 @@ void *processorThread(void *arg) {
 
 	char *str = (char*) arg;
 
-//	pthread_mutex_lock(&cd_lock);
-
-//	printf("%s\n", str);
-
 	bookOrder* findBookOrder;
 	HASH_FIND_STR(bookOrderHead, str, findBookOrder);
 
@@ -145,7 +141,7 @@ void *processorThread(void *arg) {
 
 			if (tempPerson->balance >= findBookOrder->price) {
 
-				int balance = tempPerson->balance;
+				float balance = tempPerson->balance;
 
 				if (tempPerson->so == NULL) {
 
@@ -218,8 +214,6 @@ void *processorThread(void *arg) {
 		HASH_FIND_STR(bookOrderHead, str, findBookOrder);
 		pthread_mutex_unlock(&cd_lock);
 	}
-
-//	pthread_mutex_unlock(&cd_lock);
 
 	return 0;
 
@@ -304,7 +298,7 @@ void writeFinalReport() {
 			fprintf(dbFile, "=== BEGIN CUSTOMER INFO ===\n");
 			fprintf(dbFile, "### Balance ###\n");
 
-		//	fprintf(dbFile, "Customer name: %s\n", ptr->name);
+			//	fprintf(dbFile, "Customer name: %s\n", ptr->name);
 
 			fprintf(dbFile, "Customer name: ");
 
@@ -321,7 +315,10 @@ void writeFinalReport() {
 
 			fprintf(dbFile, "\n");
 
-			fprintf(dbFile, "Remaining credit balance after all purchases (a dollar amount): %f\n", ptr->balance);
+			fprintf(
+					dbFile,
+					"Remaining credit balance after all purchases (a dollar amount): %f\n",
+					ptr->balance);
 			fprintf(dbFile, "### SUCCESSFUL ORDERS ###\n");
 
 			if (ptr->so != NULL) {
@@ -399,7 +396,7 @@ int main(int argc, char *argv[]) {
 			readOrderFile(orderFile);
 
 			//	printDB();
-			//	printOrder();
+				printOrder();
 		}
 
 		else {
@@ -410,23 +407,6 @@ int main(int argc, char *argv[]) {
 	}
 
 	pthread_mutex_init(&cd_lock, NULL);
-
-	/*	pthread_t processor_SPORTS01, processor_HOUSING01, processor_POLITICS01;
-
-	 int ret;
-
-	 ret = pthread_create(&processor_SPORTS01, 0, processorThread, cat[0]);
-	 //	printf("%d \n", ret);
-
-	 ret = pthread_create(&processor_HOUSING01, 0, processorThread, cat[1]);
-	 //	printf("%d \n", ret);
-
-	 ret = pthread_create(&processor_POLITICS01, 0, processorThread, cat[2]);
-	 //	printf("%d \n", ret);
-
-	 pthread_join(processor_SPORTS01, 0);
-	 pthread_join(processor_HOUSING01, 0);
-	 pthread_join(processor_POLITICS01, 0); */
 
 	int threads = count;
 	int i;

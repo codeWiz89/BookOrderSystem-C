@@ -9,7 +9,7 @@ typedef struct bookorder_ bookOrder;
 struct bookorder_ {
 	char book[500];
 	int id;
-	double price;
+	float price;
 	char category[100];
 
 	UT_hash_handle hh;
@@ -20,8 +20,8 @@ typedef struct successful_ successfulOrder;
 struct successful_ {
 
 	char title[500];
-	double price;
-	double remaining;
+	float price;
+	float remaining;
 	successfulOrder* next;
 };
 
@@ -29,7 +29,7 @@ typedef struct failed_ failedOrder;
 struct failed_ {
 
 	char title[500];
-	double price;
+	float price;
 	failedOrder* next;
 };
 
@@ -38,7 +38,7 @@ struct personNode_ {
 
 	char name[500];
 	int id;
-	double balance;
+	float balance;
 	char address[500];
 	char state[50];
 	char zipcode[50];
