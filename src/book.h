@@ -18,15 +18,17 @@ struct bookorder_ {
 
 typedef struct successful_ successfulOrder;
 struct successful_ {
-	char* title;
+
+	char title[500];
 	double price;
 	double remaining;
 	successfulOrder* next;
 };
 
-typedef struct failed_* failedOrder;
+typedef struct failed_ failedOrder;
 struct failed_ {
-	char* title;
+
+	char title[500];
 	double price;
 	failedOrder* next;
 };
@@ -41,8 +43,8 @@ struct personNode_ {
 	char state[50];
 	char zipcode[50];
 
-	successfulOrder so;
-	failedOrder fo;
+	successfulOrder* so;
+	failedOrder* fo;
 
 	UT_hash_handle hh;
 };

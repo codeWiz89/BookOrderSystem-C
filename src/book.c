@@ -12,7 +12,6 @@
 #include <ctype.h>
 #include <pthread.h>
 #include "book.h"
-#include "tokenizer.h"
 
 personNode* personHead = NULL;
 bookOrder* bookOrderHead = NULL;
@@ -126,24 +125,114 @@ void *processorThread(void *arg) {
 
 	char *str = (char*) arg;
 
-	pthread_mutex_lock(&cd_lock); /* "Dont touch the queue! I'm changing it." */
+	/*	pthread_mutex_lock(&cd_lock); // "Dont touch the queue! I'm changing it."
 
-//	printf("%s\n", str);
+	 //	printf("%s\n", str);
 
-	int i = 0;
-	bookOrder* toFind;
+	 bookOrder* toFind;
+	 HASH_FIND_STR(bookOrderHead, str, toFind);
 
-	HASH_FIND_STR(bookOrderHead, str, toFind);
+	 while (toFind != NULL) {
 
-	while (toFind != NULL) {
+	 //	printf("%s ", toFind->book);
+	 //	printf("%f ", toFind->price);
+	 //	printf("%i ", toFind->id);
+	 //	printf("%s\n", toFind->category);
 
-	//	printf("%s ", toFind->book);
-	//	printf("%f ", toFind->price);
-	//	printf("%i ", toFind->id);
-	//	printf("%s\n", toFind->category);
+	 HASH_DEL(bookOrderHead, toFind);
+	 HASH_FIND_STR(bookOrderHead, str, toFind);
+	 }
 
-		HASH_DEL(bookOrderHead, toFind);
-		HASH_FIND_STR(bookOrderHead, str, toFind);
+	 pthread_mutex_unlock(&cd_lock); */
+
+	pthread_mutex_lock(&cd_lock); // "Dont touch the queue! I'm changing it."
+
+	bookOrder* findOrder;
+	HASH_FIND_STR(bookOrderHead, str, findOrder);
+
+	if (findOrder != NULL) {
+
+		personNode* tempPerson;
+		int tempID = findOrder->id;
+
+		HASH_FIND_INT(personHead, &tempID, tempPerson);
+
+		if (tempPerson != NULL) {
+
+			if (tempPerson->balance >= findOrder->price) {
+
+				int balance = tempPerson->balance;
+
+				if (tempPerson->so == NULL) {
+
+					tempPerson->so = malloc(sizeof(successfulOrder));
+					strcpy(tempPerson->so->title, findOrder->book);
+					tempPerson->so->price = findOrder->price;
+					tempPerson->so->remaining = balance - findOrder->price;
+					tempPerson->balance = balance - findOrder->price;
+
+				}
+
+				else {
+
+					successfulOrder* prev = NULL;
+					successfulOrder* ptr = tempPerson->so;
+
+					successfulOrder* so = malloc(sizeof(successfulOrder));
+					strcpy(so->title, findOrder->book);
+					so->price = findOrder->price;
+					so->remaining = balance - findOrder->price;
+					tempPerson->balance = balance - findOrder->price;
+
+					do {
+
+						prev = ptr;
+						ptr = ptr->next;
+
+					} while (ptr != NULL);
+
+					prev->next = so;
+				}
+
+				HASH_DEL(bookOrderHead, findOrder);
+			}
+
+			else {
+
+				failedOrder* fo = malloc(sizeof(failedOrder));
+				strcpy(fo->title, findOrder->book);
+				fo->price = findOrder->price;
+
+				HASH_DEL(bookOrderHead, findOrder);
+
+				if (tempPerson->fo == NULL) {
+
+					tempPerson->fo = malloc(sizeof(failedOrder));
+					strcpy(tempPerson->fo->title, findOrder->book);
+					tempPerson->fo->price = findOrder->price;
+
+				}
+
+				else {
+
+					failedOrder* prev = NULL;
+					failedOrder* ptr = tempPerson->fo;
+
+					failedOrder* fo = malloc(sizeof(failedOrder));
+					strcpy(fo->title, findOrder->book);
+					fo->price = findOrder->price;
+
+					do {
+
+						prev = ptr;
+						ptr = ptr->next;
+
+					} while (ptr != NULL);
+
+					prev->next = fo;
+				}
+			}
+		}
 	}
 
 	pthread_mutex_unlock(&cd_lock);
@@ -151,18 +240,58 @@ void *processorThread(void *arg) {
 	return 0;
 
 }
+
+
 void printDB() {
 
 	personNode* temp;
 
 	for (temp = personHead; temp != NULL; temp = temp->hh.next) {
 
-		printf("%s ", temp->name);
-		printf("%i ", temp->id);
-		printf("%f ", temp->balance);
-		printf("%s ", temp->address);
-		printf("%s ", temp->state);
-		printf("%s\n", temp->zipcode);
+		if (temp != NULL) {
+
+			printf("%s ", temp->name);
+			printf("%i ", temp->id);
+			printf("%f ", temp->balance);
+			printf("%s ", temp->address);
+			printf("%s ", temp->state);
+			printf("%s\n", temp->zipcode);
+
+			if (temp->so != NULL) {
+
+				successfulOrder* ptr = temp->so;
+
+				while (ptr != NULL) {
+
+					printf("%s ", ptr->title);
+					printf("%f ", ptr->price);
+					printf("%f \n", ptr->remaining);
+
+					ptr = ptr->next;
+
+				}
+			}
+
+			if (temp->fo != NULL) {
+
+				printf("Now Printing failed orders...\n");
+
+				failedOrder* ptr = temp->fo;
+
+				while (ptr != NULL) {
+
+					printf("%s ", ptr->title);
+					printf("%f \n", ptr->price);
+
+					ptr = ptr->next;
+
+				}
+			}
+		}
+
+		printf("\n");
+		printf("\n");
+
 	}
 }
 
@@ -209,8 +338,8 @@ int main(int argc, char *argv[]) {
 			readDBFile(dbFile);
 			readOrderFile(orderFile);
 
-			//	printDB();
-			//	printOrder();
+			printDB();
+			printOrder();
 		}
 
 		else {
@@ -221,66 +350,34 @@ int main(int argc, char *argv[]) {
 	}
 
 	pthread_mutex_init(&cd_lock, NULL);
-//	pthread_t allThreads[count];
-
-	int i = 0;
-
-/*	for (i = 0; i < count; i++) {
-
-		pthread_t processor;
-	//	allThreads[i] = pthread_create(&processor, NULL, processorThread, cat[i]);
-		pthread_create(&processor, NULL, processorThread, cat[i]);
-
-	} */
 
 	pthread_t processor_SPORTS01, processor_HOUSING01, processor_POLITICS01;
 
-	int ret = 0;
+	int ret;
 
 	ret = pthread_create(&processor_SPORTS01, NULL, processorThread, cat[0]);
 	printf("%d \n", ret);
+
 	ret = pthread_create(&processor_HOUSING01, NULL, processorThread, cat[1]);
 	printf("%d \n", ret);
+
 	ret = pthread_create(&processor_POLITICS01, NULL, processorThread, cat[2]);
 	printf("%d \n", ret);
 
-	pthread_join(processor_SPORTS01, 0);
-	pthread_join(processor_HOUSING01, 0);
-	pthread_join(processor_POLITICS01, 0);
+	pthread_join(processor_SPORTS01, NULL);
+	pthread_join(processor_HOUSING01, NULL);
+	pthread_join(processor_POLITICS01, NULL);
 
-/*	for (i = 0; i < count; i++) {
+	printDB();
 
-		pthread_join(allThreads[i], NULL);
-
-	} */
+	printf("\n");
+	printf("\n");
+	printf("\n");
 
 	printOrder();
 
-	/* printf("\n");
-	 printf("\n");
-	 printf("\n");
 
-	 int i = 0;
-	 bookOrder* toFind;
 
-	 for (i = 0; i < count; i++) {
-
-	 HASH_FIND_STR(bookOrderHead, cat[i], toFind);
-
-	 while (toFind != NULL) {
-
-	 printf("%s ", toFind->book);
-	 printf("%f ", toFind->price);
-	 printf("%i ", toFind->id);
-	 printf("%s\n", toFind->category);
-
-	 HASH_DEL(bookOrderHead, toFind);
-
-	 HASH_FIND_STR(bookOrderHead, cat[i], toFind);
-	 }
-	 }
-
-	 */
 
 	return 0;
 }
