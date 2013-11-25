@@ -27,18 +27,18 @@ void readDBFile(FILE* fileToRead) {
 	while (!feof(dbFile)) {
 
 		fgets(line, 1000, dbFile);
+		if(!feof(dbFile)){
+		  personNode* toAdd = malloc(sizeof(personNode));
+		  char* temp = strtok(line,"|");
+		  strcpy(toAdd->name, temp);
+		  toAdd->id = atoi(strtok(NULL, "|"));
+		  toAdd->balance = atof(strtok(NULL, "|"));
+		  strcpy(toAdd->address, strtok(NULL, "|"));
+		  strcpy(toAdd->state, strtok(NULL, "|"));
+		  strcpy(toAdd->zipcode, strtok(NULL, "|"));
 
-		personNode* toAdd = malloc(sizeof(personNode));
-
-		strcpy(toAdd->name, strtok(line, "|"));
-		toAdd->id = atoi(strtok(NULL, "|"));
-		toAdd->balance = atof(strtok(NULL, "|"));
-		strcpy(toAdd->address, strtok(NULL, "|"));
-		strcpy(toAdd->state, strtok(NULL, "|"));
-		strcpy(toAdd->zipcode, strtok(NULL, "|"));
-
-		HASH_ADD(hh, personHead, id, sizeof(int), toAdd);
-
+		  HASH_ADD(hh, personHead, id, sizeof(int), toAdd);
+		}
 		memset(line, 0, 1000);
 
 	}
@@ -148,9 +148,8 @@ void *processorThread(void *arg) {
 	pthread_mutex_lock(&cd_lock); // "Dont touch the queue! I'm changing it."
 
 	bookOrder* findOrder;
-	HASH_FIND_STR(bookOrderHead, str, findOrder);
-
-	if (findOrder != NULL) {
+	for (findOrder = bookOrderHead; findOrder != NULL; findOrder = findOrder->hh.next) {
+	  if (strcmp(findOrder->category,str)==0) {
 
 		personNode* tempPerson;
 		int tempID = findOrder->id;
@@ -170,6 +169,7 @@ void *processorThread(void *arg) {
 					tempPerson->so->price = findOrder->price;
 					tempPerson->so->remaining = balance - findOrder->price;
 					tempPerson->balance = balance - findOrder->price;
+					
 
 				}
 
@@ -183,6 +183,7 @@ void *processorThread(void *arg) {
 					so->price = findOrder->price;
 					so->remaining = balance - findOrder->price;
 					tempPerson->balance = balance - findOrder->price;
+					
 
 					do {
 
@@ -234,7 +235,7 @@ void *processorThread(void *arg) {
 			}
 		}
 	}
-
+	}
 	pthread_mutex_unlock(&cd_lock);
 
 	return 0;
@@ -338,8 +339,8 @@ int main(int argc, char *argv[]) {
 			readDBFile(dbFile);
 			readOrderFile(orderFile);
 
-			printDB();
-			printOrder();
+			//printDB();
+			//printOrder();
 		}
 
 		else {
@@ -356,17 +357,19 @@ int main(int argc, char *argv[]) {
 	int ret;
 
 	ret = pthread_create(&processor_SPORTS01, NULL, processorThread, cat[0]);
-	printf("%d \n", ret);
+	printf("%s 0 \n", cat[0]);
 
 	ret = pthread_create(&processor_HOUSING01, NULL, processorThread, cat[1]);
-	printf("%d \n", ret);
+	printf("%s 0 \n", cat[1]);
 
 	ret = pthread_create(&processor_POLITICS01, NULL, processorThread, cat[2]);
-	printf("%d \n", ret);
+	printf("%s 0 \n", cat[2]);
 
 	pthread_join(processor_SPORTS01, NULL);
 	pthread_join(processor_HOUSING01, NULL);
 	pthread_join(processor_POLITICS01, NULL);
+
+	printf("\n");
 
 	printDB();
 
