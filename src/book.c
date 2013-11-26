@@ -12,10 +12,15 @@
 #include <ctype.h>
 #include <pthread.h>
 #include "book.h"
+#include "tokenizer.h"
+
+#define DELIMS "abcdefghijklmnopqrstuvwyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 personNode* personHead = NULL;
 bookOrder* bookOrderHead = NULL;
 pthread_mutex_t cd_lock;
+
+float revenue = 0;
 
 char* cat[50];
 
@@ -24,9 +29,7 @@ void readDBFile(FILE* fileToRead) {
 	char line[1000] = { 0 };
 	FILE* dbFile = fileToRead;
 
-	while (!feof(dbFile)) {
-
-		fgets(line, 1000, dbFile);
+	while (fgets(line, 1000, dbFile) != NULL) {
 
 		personNode* toAdd = malloc(sizeof(personNode));
 
@@ -41,6 +44,7 @@ void readDBFile(FILE* fileToRead) {
 
 		memset(line, 0, 1000);
 	}
+
 }
 
 void readOrderFile(FILE* fileToRead) {
@@ -137,7 +141,7 @@ void *processorThread(void *arg) {
 
 		if (tempPerson != NULL) {
 
-			printf("%d\n", tempPerson->id);
+			//	printf("%d\n", tempPerson->id);
 
 			if (tempPerson->balance >= findBookOrder->price) {
 
@@ -151,6 +155,7 @@ void *processorThread(void *arg) {
 					tempPerson->so->remaining = balance - findBookOrder->price;
 					tempPerson->balance = balance - findBookOrder->price;
 
+					revenue += findBookOrder->price;
 				}
 
 				else {
@@ -163,6 +168,8 @@ void *processorThread(void *arg) {
 					so->price = findBookOrder->price;
 					so->remaining = balance - findBookOrder->price;
 					tempPerson->balance = balance - findBookOrder->price;
+
+					revenue += findBookOrder->price;
 
 					do {
 
@@ -315,10 +322,8 @@ void writeFinalReport() {
 
 			fprintf(dbFile, "\n");
 
-			fprintf(
-					dbFile,
-					"Remaining credit balance after all purchases (a dollar amount): %f\n",
-					ptr->balance);
+			fprintf(dbFile, "Customer id: %i\n", ptr->id);
+			fprintf(dbFile, "Remaining credit balance after all purchases (a dollar amount): %f\n", ptr->balance);
 			fprintf(dbFile, "### SUCCESSFUL ORDERS ###\n");
 
 			if (ptr->so != NULL) {
@@ -374,15 +379,40 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	char* c = strtok(argv[3], " ");
+	char* c = argv[3];
 
-	int count = 0;
+	int count, noMoreTokens = 0;
 
-	while (c != NULL) {
+	/*	while (c != NULL) {
 
-		cat[count] = c;
-		c = strtok(NULL, " ");
-		count += 1;
+	 cat[count] = c;
+	 c = strtok(NULL, " ");
+	 count += 1;
+	 } */
+
+	char* word;
+
+	TokenizerT* tokenizer;
+
+	char* deli = (char*) DELIMS
+
+	tokenizer = TKCreate(deli, c);
+
+	while (noMoreTokens != 1) {
+
+		word = TKGetNextToken(tokenizer);
+
+		if (word != NULL) {
+
+			cat[count] = word;
+			count++;
+
+		}
+
+		else {
+
+			noMoreTokens = 1;
+		}
 	}
 
 	if (argv[1] != NULL && argv[2] != NULL) {
@@ -396,7 +426,7 @@ int main(int argc, char *argv[]) {
 			readOrderFile(orderFile);
 
 			//	printDB();
-				printOrder();
+			//  printOrder();
 		}
 
 		else {
@@ -433,7 +463,9 @@ int main(int argc, char *argv[]) {
 	printf("\n");
 	printf("\n");
 
-	printDB();
+//	printDB();
+
+	printf("Total revenue from successful orders: %f\n", revenue);
 	writeFinalReport();
 
 	return 0;
