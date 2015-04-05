@@ -2,7 +2,7 @@
  *  book.c
  *
  *  Created on: Nov 20, 2013
- *  Author: Inderjeet Bhattal, Charlie Shin
+ * 
  */
 
 #include <stdio.h>
